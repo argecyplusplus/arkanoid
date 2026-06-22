@@ -187,6 +187,48 @@ const Arkanoid = {
             ball.y = paddleTop - ball.radius - 0.5;
         }
 
+        //удар по блокам
+        for (let i = 0; i < this.bricks.length; i++) {
+            const brick = this.bricks[i];
+            if (!brick.alive) continue;
+
+            const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.w));
+            const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.h));
+            const distX = ball.x - closestX;
+            const distY = ball.y - closestY;
+            const dist = Math.sqrt(distX * distX + distY * distY);
+
+            if (dist < ball.radius) {
+                brick.alive = false; 
+                this.score++; 
+        
+                //направление
+                const directionX = ball.radius - Math.abs(distX);
+                const directionY = ball.radius - Math.abs(distY);
+        
+                if (directionX < directionY) {
+                    ball.dx = -ball.dx;
+                } else {
+                    ball.dy = -ball.dy;  
+                }
+        
+                if (distX !== 0 || distY !== 0) {
+                    const normX = distX / dist;
+                    const normY = distY / dist;
+                    ball.x = closestX + normX * (ball.radius + 0.5);
+                    ball.y = closestY + normY * (ball.radius + 0.5);
+                }
+        
+                //победа?
+                const allDead = this.bricks.every(b => !b.alive);
+                if (allDead) {
+                    this.gameActive = false;
+                    alert('Вы выиграли');
+                }
+                break;
+            }
+
+        }
 
         //луз
         if (ball.y + ball.radius > canvas.height) {
