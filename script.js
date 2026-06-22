@@ -21,7 +21,7 @@ const Arkanoid = {
         radius: 9,
         dx: 0,
         dy: 0,
-        speed: 5
+        speed: 3
     },
 
     bricks: [],
@@ -106,6 +106,10 @@ const Arkanoid = {
                 this.keys.right = true;
                 e.preventDefault();
             }
+            if (e.key === ' ' || e.key === 'Space') {
+                e.preventDefault();
+                this.startGame();
+            }
         });
     
         document.addEventListener('keyup', (e) => {
@@ -118,19 +122,90 @@ const Arkanoid = {
                 e.preventDefault();
             }
         });
+        
     },
 
     //обновление канваса
     update() {
         const paddle = this.paddle;
         const canvas = this.canvas;
+        const ball = this.ball;
 
+        //движение платформы
         if (this.keys.left && paddle.x > 0) {
             paddle.x = Math.max(0, paddle.x - 7);
         }
         if (this.keys.right && paddle.x + paddle.w < canvas.width) {
             paddle.x = Math.min(canvas.width - paddle.w, paddle.x + 7);
         }
+
+        if (!this.gameActive) return;
+        //движения мяча
+        ball.x += ball.dx;
+        ball.y += ball.dy;
+
+        //отскок - от стен
+        if (ball.x - ball.radius < 0) {
+            ball.x = ball.radius;
+            ball.dx = -ball.dx;
+        } else if (ball.x + ball.radius > canvas.width) {
+            ball.x = canvas.width - ball.radius;
+            ball.dx = -ball.dx;
+        }
+    
+        if (ball.y - ball.radius < 0) {
+            ball.y = ball.radius;
+            ball.dy = -ball.dy;
+        }
+
+        //отскок - от платформы
+        const paddleTop = paddle.y - paddle.h / 2;
+        const paddleBottom = paddle.y + paddle.h / 2;
+        const paddleLeft = paddle.x;
+        const paddleRight = paddle.x + paddle.w;
+
+        if (ball.dy > 0 &&
+            ball.y + ball.radius >= paddleTop &&
+            ball.y + ball.radius <= paddleBottom + 6 &&
+            ball.x >= paddleLeft - ball.radius &&
+            ball.x <= paddleRight + ball.radius) {
+
+            const hitPos = (ball.x - paddle.x) / paddle.w;
+            const angle = (hitPos - 0.5) * 1.2;
+            const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+
+            ball.dx = Math.sin(angle) * speed;
+            ball.dy = -Math.cos(angle) * speed;
+
+            if (Math.abs(ball.dy) < speed * 0.25) {
+                ball.dy = -speed * 0.45;
+            }
+            if (Math.abs(ball.dx) < 0.8) {
+                ball.dx = ball.dx > 0 ? 1.2 : -1.2;
+            }
+
+            ball.y = paddleTop - ball.radius - 0.5;
+        }
+
+
+        //луз
+        if (ball.y + ball.radius > canvas.height) {
+            this.lives--;
+            this.updateLivesDisplay();
+    
+            if (this.lives <= 0) {
+                this.gameActive = false;
+                alert('Вы проиграли');
+                return;
+            }
+    
+            this.gameActive = false;
+            this.setupPaddle();
+            this.setupBall();
+            return;
+        }
+
+
     },
 
     //отрисовка
@@ -141,7 +216,7 @@ const Arkanoid = {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#0D0D1A';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+ 
         for (const brick of this.bricks) {
             if (!brick.alive) continue;
     
@@ -156,6 +231,19 @@ const Arkanoid = {
         ctx.beginPath();
         ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
         ctx.fill();
+    },
+    startGame(){
+        if (this.gameActive) return;
+ 
+        this.gameActive = true;
+        const angle = -Math.PI / 2 + (Math.random() * 0.6 - 0.3);
+        const speed = this.ball.speed;
+        this.ball.dx = Math.cos(angle) * speed;
+        this.ball.dy = Math.sin(angle) * speed;
+
+        if (Math.abs(this.ball.dx) < 1.2) {
+            this.ball.dx = this.ball.dx > 0 ? 1.8 : -1.8;
+        }
     },
 
     gameLoop() {
