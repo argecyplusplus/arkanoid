@@ -4,7 +4,7 @@ const Arkanoid = {
     ctx: null,
     livesDisplay: null,
 
-    lives: 2,
+    lives: 3,
     score: 0,
     gameActive: false,
     gameOver: false,
@@ -46,11 +46,19 @@ const Arkanoid = {
         }
     },
 
+    highScore: 0,
+    highScoreDisplay: null,
+
 
     init(){
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.livesDisplay = document.getElementById('livesDisplay');
+        this.scoreDisplay = document.getElementById('scoreDisplay');
+        this.highScoreDisplay = document.getElementById('highScoreDisplay');
+
+        this.loadHighScore();
+        this.updateHighScoreDisplay();
 
         this.setupPaddle();
         this.setupBall();
@@ -59,6 +67,11 @@ const Arkanoid = {
 
         this.gameLoop();
         this.updateLivesDisplay();
+        this.updateScoreDisplay();
+    },
+
+    updateScoreDisplay (){
+        this.scoreDisplay.textContent = String(this.score).padStart(5, '0');
     },
 
     setupPaddle() {
@@ -234,6 +247,7 @@ const Arkanoid = {
             if (dist < ball.radius) {
                 brick.alive = false; 
                 this.score++; 
+                this.updateScoreDisplay();
 
                 if (brick.hasBonus) {
                     this.spawnBonus(brick.x + brick.w / 2, brick.y);
@@ -261,6 +275,7 @@ const Arkanoid = {
                 if (allDead) {
                     this.gameActive = false;
                     this.gameWin = true;
+                    this.saveHighScore();
                 }
                 break;
             }
@@ -310,7 +325,8 @@ const Arkanoid = {
         
             if (this.lives <= 0) {
                 this.gameActive = false;
-                this.gameOver = true; 
+                this.gameOver = true;
+                this.saveHighScore();
                 return;
             }
         
@@ -404,7 +420,7 @@ const Arkanoid = {
     },
 
     resetGame() {
-        this.lives = 2;
+        this.lives = 3;
         this.score = 0;
         this.gameActive = false;
         this.gameOver = false;
@@ -414,7 +430,28 @@ const Arkanoid = {
         this.setupPaddle();
         this.setupBall();
         this.updateLivesDisplay();
+        this.updateScoreDisplay();
     },
+
+    loadHighScore() {
+        const saved = localStorage.getItem('arkanoid_highScore');
+        this.highScore = saved ? parseInt(saved, 10) : 0;
+    },
+    
+    saveHighScore() {
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            localStorage.setItem('arkanoid_highScore', String(this.highScore));
+            this.updateHighScoreDisplay();
+        }
+    },
+    
+    updateHighScoreDisplay() {
+        if (this.highScoreDisplay) {
+            this.highScoreDisplay.textContent = String(this.highScore).padStart(5, '0');
+        }
+    },
+
 
     gameLoop() {
         this.update();
