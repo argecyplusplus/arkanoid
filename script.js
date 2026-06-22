@@ -51,7 +51,7 @@ const Arkanoid = {
 
     setupBall() {
         this.ball.x = this.paddle.x + this.paddle.w / 2;
-        this.ball.y = this.paddle.y - this.ball.radius - 2;
+        this.ball.y = this.paddle.y - this.paddle.h / 2 - this.ball.radius;
     },
 
     updateLivesDisplay() {
@@ -96,11 +96,41 @@ const Arkanoid = {
 
     },
 
-    setupControls() {},
+    setupControls() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                this.keys.left = true;
+                e.preventDefault();
+            }
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                this.keys.right = true;
+                e.preventDefault();
+            }
+        });
+    
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                this.keys.left = false;
+                e.preventDefault();
+            }
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                this.keys.right = false;
+                e.preventDefault();
+            }
+        });
+    },
 
     //обновление канваса
     update() {
+        const paddle = this.paddle;
+        const canvas = this.canvas;
 
+        if (this.keys.left && paddle.x > 0) {
+            paddle.x = Math.max(0, paddle.x - 7);
+        }
+        if (this.keys.right && paddle.x + paddle.w < canvas.width) {
+            paddle.x = Math.min(canvas.width - paddle.w, paddle.x + 7);
+        }
     },
 
     //отрисовка
