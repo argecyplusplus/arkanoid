@@ -42,6 +42,7 @@ const Arkanoid = {
         this.setupControls();
 
         this.gameLoop();
+        this.updateLivesDisplay();
     },
 
     setupPaddle() {
@@ -50,18 +51,82 @@ const Arkanoid = {
 
     setupBall() {
         this.ball.x = this.paddle.x + this.paddle.w / 2;
-        this.ball.y = this.paddle.y - this.ball.radius - 1;
+        this.ball.y = this.paddle.y - this.ball.radius - 2;
     },
 
-    createBricks() {},
+    updateLivesDisplay() {
+        let hearts = '';
+        for (let i = 0; i < this.lives; i++) {
+            hearts += '❤️';
+        }
+        this.livesDisplay.textContent = hearts;
+    },
+
+    createBricks() {
+
+        const rows = 6;
+        const columns = 11;
+
+        const w = 65;
+        const h = 20;
+        const gap = 6;
+
+        const offsetX = 15;
+        const offsetY = 50;
+
+        const colors = ['#B0B0B5', '#710000', '#002EC2', '#D19834', '#D437CD', '#AAFF4C'];
+
+        this.bricks = []
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < columns; c++) {
+                this.bricks.push({
+                    x: offsetX + c * (w + gap),
+                    y: offsetY + r * (h + gap),
+                    w: w,
+                    h: h,
+                    alive: true,
+                    color: colors[r]
+                })
+            }
+        }
+
+
+
+
+    },
 
     setupControls() {},
 
     //обновление канваса
-    update() {},
+    update() {
 
-    //отрисовка с нуля
-    draw() {},
+    },
+
+    //отрисовка
+    draw() {
+        const ctx = this.ctx;
+        const canvas = this.canvas;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#0D0D1A';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (const brick of this.bricks) {
+            if (!brick.alive) continue;
+    
+            ctx.fillStyle = brick.color;
+            ctx.fillRect(brick.x, brick.y, brick.w, brick.h);
+        }
+
+        ctx.fillStyle = '#4C0F1A';
+        ctx.fillRect(this.paddle.x, this.paddle.y - this.paddle.h / 2, this.paddle.w, this.paddle.h);
+
+        ctx.fillStyle = '#C4AA89';
+        ctx.beginPath();
+        ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
+        ctx.fill();
+    },
 
     gameLoop() {
         this.update();
