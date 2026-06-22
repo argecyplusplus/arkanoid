@@ -1,0 +1,72 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+#gameWrapper {
+    padding: 30px;
+}
+
+#gameContainer {   
+     display: flex;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+#gameCanvas {
+    display: block;
+    width: 800px;
+    height: 500px;
+    background: #0d0d1a;
+    border-radius: 4px;
+}
+
+#sidePanel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 10px 0;
+    min-width: 180px;
+    background: #000000;
+}
+
+#scoreSection {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.label {
+    font-size: 30px;
+    color: white;
+    font-weight: bold;
+}
+
+#screenBorder{
+    background: #000000;
+    padding: 8px;
+    border: 10px solid #ffffff;
+    border-radius: 8px;
+}
+
+#highScoreDisplay,
+#scoreDisplay {
+    font-size: 36px;
+    color: white;
+    font-weight: bold;
+}
+
+#livesSection {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}

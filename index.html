@@ -8,8 +8,11 @@
 </head>
 <body>
     <div id="gameWrapper">
-        <div id="">
-            <div id="topPanel">
+        <div id="gameContainer">
+            <div id="screenBorder">
+                <canvas id="gameCanvas" width="800" height="500"></canvas>
+            </div>
+            <div id="sidePanel">
                 <div id="scoreSection">
                     <span class="label">HIGH SCORE</span>
                     <span id="highScoreDisplay">00000</span>
@@ -19,10 +22,6 @@
                 <div id="livesSection">
                     <div id="livesDisplay"></div>
                 </div>
-            </div>
-
-            <div id="screenBorder">
-                <canvas id="gameCanvas" width="800" height="500"></canvas>
             </div>
         </div>
     </div>
