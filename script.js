@@ -7,6 +7,8 @@ const Arkanoid = {
     lives: 2,
     score: 0,
     gameActive: false,
+    gameOver: false,
+    gameWin: false,
 
     paddle: {
         x: 0,
@@ -258,7 +260,7 @@ const Arkanoid = {
                 const allDead = this.bricks.every(b => !b.alive);
                 if (allDead) {
                     this.gameActive = false;
-                    alert('Вы выиграли');
+                    this.gameWin = true;
                 }
                 break;
             }
@@ -305,19 +307,18 @@ const Arkanoid = {
         if (ball.y + ball.radius > canvas.height) {
             this.lives--;
             this.updateLivesDisplay();
-    
+        
             if (this.lives <= 0) {
                 this.gameActive = false;
-                alert('Вы проиграли');
+                this.gameOver = true; 
                 return;
             }
-    
+        
             this.gameActive = false;
             this.setupPaddle();
             this.setupBall();
             return;
         }
-
 
     },
 
@@ -348,9 +349,47 @@ const Arkanoid = {
         ctx.beginPath();
         ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
         ctx.fill();
+    
+        //Финальноее сообщение
+        if (this.gameOver) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 60px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 20);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            ctx.fillText('Press ENTER to restart', canvas.width / 2, canvas.height / 2 + 50);
+        }
+
+        if (this.gameWin) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 60px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('YOU WON', canvas.width / 2, canvas.height / 2 - 20);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            ctx.fillText('Press ENTER to restart', canvas.width / 2, canvas.height / 2 + 50);
+        }
+    
     },
 
     startGame(){
+        if (this.gameOver || this.gameWin) {
+            this.resetGame();
+            setTimeout(() => this.startGame(), 50);
+            return;
+        }
+    
         if (this.gameActive) return;
  
         this.gameActive = true;
@@ -362,6 +401,19 @@ const Arkanoid = {
         if (Math.abs(this.ball.dx) < 1.2) {
             this.ball.dx = this.ball.dx > 0 ? 1.8 : -1.8;
         }
+    },
+
+    resetGame() {
+        this.lives = 2;
+        this.score = 0;
+        this.gameActive = false;
+        this.gameOver = false;
+        this.gameWin = false;
+        this.bonuses = [];
+        this.createBricks();
+        this.setupPaddle();
+        this.setupBall();
+        this.updateLivesDisplay();
     },
 
     gameLoop() {
