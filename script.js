@@ -31,6 +31,20 @@ const Arkanoid = {
         right: false
     },
 
+    bonuses: [],
+
+    bonusTypes: {
+        '1': {
+            name: 'Расширение платформы',
+            color: '#FFD700',
+        },
+        '2': {
+            name: 'Растроение мяча',
+            color: '#FF6BFF',
+        }
+    },
+
+
     init(){
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
@@ -86,7 +100,8 @@ const Arkanoid = {
                     w: w,
                     h: h,
                     alive: true,
-                    color: colors[r]
+                    color: colors[r],
+                    hasBonus: Math.random() < 0.15 //15% шанс дропа бонуса
                 })
             }
         }
@@ -123,6 +138,22 @@ const Arkanoid = {
             }
         });
         
+    },
+
+    spawnBonus(x, y){
+        const types = Object.keys(this.bonusTypes); 
+        const type = types[Math.floor(Math.random() * types.length)];
+        const bonusConfig = this.bonusTypes[type];
+    
+        this.bonuses.push({
+            x: x - 10,
+            y: y,
+            w: 20,
+            h: 16,
+            type: type,
+            speed: 2,
+            color: bonusConfig.color
+        });
     },
 
     //обновление канваса
@@ -201,6 +232,10 @@ const Arkanoid = {
             if (dist < ball.radius) {
                 brick.alive = false; 
                 this.score++; 
+
+                if (brick.hasBonus) {
+                    this.spawnBonus(brick.x + brick.w / 2, brick.y);
+                }
         
                 //направление
                 const directionX = ball.radius - Math.abs(distX);
@@ -230,6 +265,42 @@ const Arkanoid = {
 
         }
 
+        //бонусы
+        for (let i = this.bonuses.length - 1; i >= 0; i--) {
+            const bonus = this.bonuses[i];
+            bonus.y += bonus.speed;
+
+            const paddleTop = paddle.y - paddle.h / 2;
+            const paddleBottom = paddle.y + paddle.h / 2;
+            const paddleLeft = paddle.x;
+            const paddleRight = paddle.x + paddle.w;
+
+            if (bonus.y + bonus.h >= paddleTop &&
+                bonus.y <= paddleBottom &&
+                bonus.x + bonus.w >= paddleLeft &&
+                bonus.x <= paddleRight) {
+
+                switch (bonus.type) {
+                    case '1':
+                        console.log('бон 1');
+                        break;
+                    case '2':
+                        console.log('бон 2');
+                        break;
+                    default:
+                        console.log('Error');
+                }
+
+                this.bonuses.splice(i, 1);
+                continue;
+            }
+
+            if (bonus.y > canvas.height) {
+                this.bonuses.splice(i, 1);
+            }
+        }
+
+
         //луз
         if (ball.y + ball.radius > canvas.height) {
             this.lives--;
@@ -254,18 +325,22 @@ const Arkanoid = {
     draw() {
         const ctx = this.ctx;
         const canvas = this.canvas;
-
+    
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#0D0D1A';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
- 
+    
         for (const brick of this.bricks) {
             if (!brick.alive) continue;
-    
             ctx.fillStyle = brick.color;
             ctx.fillRect(brick.x, brick.y, brick.w, brick.h);
         }
-
+    
+        for (const bonus of this.bonuses) {
+            ctx.fillStyle = bonus.color;
+            ctx.fillRect(bonus.x, bonus.y, bonus.w, bonus.h);
+        }
+    
         ctx.fillStyle = '#4C0F1A';
         ctx.fillRect(this.paddle.x, this.paddle.y - this.paddle.h / 2, this.paddle.w, this.paddle.h);
 
@@ -274,6 +349,7 @@ const Arkanoid = {
         ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
         ctx.fill();
     },
+
     startGame(){
         if (this.gameActive) return;
  
