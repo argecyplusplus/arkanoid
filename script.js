@@ -121,15 +121,20 @@ const Arkanoid = {
 
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < columns; c++) {
+                const isStrong = (r === 0);
                 this.bricks.push({
                     x: offsetX + c * (w + gap),
                     y: offsetY + r * (h + gap),
                     w: w,
                     h: h,
                     alive: true,
-                    color: colors[r],
-                    hasBonus: Math.random() < 0.15 //15% шанс дропа бонуса
-                })
+                    color: isStrong ? '#B0B0B5' : colors[r],
+                    originalColor: isStrong ? '#B0B0B5' : colors[r],
+                    hasBonus: !isStrong && Math.random() < 0.15, // у серых нет бонусов
+                    isStrong: isStrong,
+                    hits: 0,
+                    maxHits: isStrong ? 2 : 1
+                });
             }
         }
 
@@ -140,11 +145,11 @@ const Arkanoid = {
 
     setupControls() {
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || e.key === 'ф' || e.key === 'Ф') {
                 this.keys.left = true;
                 e.preventDefault();
             }
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'в' || e.key === 'В') {
                 this.keys.right = true;
                 e.preventDefault();
             }
@@ -155,11 +160,11 @@ const Arkanoid = {
         });
     
         document.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A'|| e.key === 'ф' || e.key === 'Ф') {
                 this.keys.left = false;
                 e.preventDefault();
             }
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D'|| e.key === 'в' || e.key === 'В') {
                 this.keys.right = false;
                 e.preventDefault();
             }
@@ -253,20 +258,34 @@ const Arkanoid = {
             for (let i = 0; i < this.bricks.length; i++) {
                 const brick = this.bricks[i];
                 if (!brick.alive) continue;
-    
+
                 const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.w));
                 const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.h));
                 const distX = ball.x - closestX;
                 const distY = ball.y - closestY;
                 const dist = Math.sqrt(distX * distX + distY * distY);
-    
+
+                //с учетом прочности блока
                 if (dist < ball.radius) {
-                    brick.alive = false; 
-                    this.score++; 
-                    this.updateScoreDisplay();
-    
-                    if (brick.hasBonus) {
-                        this.spawnBonus(brick.x + brick.w / 2, brick.y);
+                    if (brick.isStrong) {
+                        brick.hits++;
+                        const brightness = 1 - (brick.hits / brick.maxHits) * 0.6;
+                        const gray = Math.floor(176 * brightness);
+                        brick.color = `rgb(${gray}, ${gray}, ${gray})`;
+                        
+                        if (brick.hits >= brick.maxHits) {
+                            brick.alive = false;
+                            this.score++;
+                            this.updateScoreDisplay();
+                        }
+                    } else {
+                        brick.alive = false;
+                        this.score++;
+                        this.updateScoreDisplay();
+
+                        if (brick.hasBonus) {
+                            this.spawnBonus(brick.x + brick.w / 2, brick.y);
+                        }
                     }
             
                     //направление
@@ -295,7 +314,6 @@ const Arkanoid = {
                     }
                     break;
                 }
-    
             }
         }
     
