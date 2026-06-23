@@ -41,13 +41,11 @@ const Arkanoid = {
     bonusTypes: {
         'expand': {
             name: 'Увеличение платформы',
-            color: '#FFD700',
-            icon: '⬛'
+            color: '#FFD700'
         },
         'divide': {
             name: 'Тройка шаров',
-            color: '#FF6BFF',
-            icon: '✦'
+            color: '#FF6BFF'
         }
     },
 
@@ -192,7 +190,6 @@ const Arkanoid = {
     update() {
         const paddle = this.paddle;
         const canvas = this.canvas;
-        const ball = this.ball;
 
         //движение платформы
         if (this.keys.left && paddle.x > 0) {
@@ -239,7 +236,7 @@ const Arkanoid = {
     
                 const hitPos = (ball.x - paddle.x) / paddle.w;
                 const angle = (hitPos - 0.5) * 1.2;
-                const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                const speed = ball.speed;
     
                 ball.dx = Math.sin(angle) * speed;
                 ball.dy = -Math.cos(angle) * speed;
