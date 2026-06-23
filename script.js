@@ -23,8 +23,11 @@ const Arkanoid = {
         radius: 9,
         dx: 0,
         dy: 0,
-        speed: 3
+        speed: 3,
+        isMagnetic: false
     },
+
+    balls: [],
 
     bricks: [],
 
@@ -36,13 +39,15 @@ const Arkanoid = {
     bonuses: [],
 
     bonusTypes: {
-        '1': {
-            name: 'Расширение платформы',
+        'expand': {
+            name: 'Увеличение платформы',
             color: '#FFD700',
+            icon: '⬛'
         },
-        '2': {
-            name: 'Растроение мяча',
+        'divide': {
+            name: 'Тройка шаров',
             color: '#FF6BFF',
+            icon: '✦'
         }
     },
 
@@ -61,7 +66,7 @@ const Arkanoid = {
         this.updateHighScoreDisplay();
 
         this.setupPaddle();
-        this.setupBall();
+        this.setupBalls();
         this.createBricks();
         this.setupControls();
 
@@ -78,9 +83,16 @@ const Arkanoid = {
         this.paddle.x = (this.canvas.width - this.paddle.w) / 2;
     },
 
-    setupBall() {
-        this.ball.x = this.paddle.x + this.paddle.w / 2;
-        this.ball.y = this.paddle.y - this.paddle.h / 2 - this.ball.radius;
+    setupBalls() {
+        this.balls = [{
+            x: this.paddle.x + this.paddle.w / 2,
+            y: this.paddle.y - this.paddle.h / 2 - 9,
+            radius: 9,
+            dx: 0,
+            dy: 0,
+            speed: 3,
+            isMagnetic: false
+        }];
     },
 
     updateLivesDisplay() {
@@ -166,7 +178,7 @@ const Arkanoid = {
             w: 20,
             h: 16,
             type: type,
-            speed: 2,
+            speed: 1,
             color: bonusConfig.color
         });
     },
@@ -184,158 +196,163 @@ const Arkanoid = {
         if (this.keys.right && paddle.x + paddle.w < canvas.width) {
             paddle.x = Math.min(canvas.width - paddle.w, paddle.x + 7);
         }
-
-        if (!this.gameActive) return;
-        //движения мяча
-        ball.x += ball.dx;
-        ball.y += ball.dy;
-
-        //отскок - от стен
-        if (ball.x - ball.radius < 0) {
-            ball.x = ball.radius;
-            ball.dx = -ball.dx;
-        } else if (ball.x + ball.radius > canvas.width) {
-            ball.x = canvas.width - ball.radius;
-            ball.dx = -ball.dx;
-        }
     
-        if (ball.y - ball.radius < 0) {
-            ball.y = ball.radius;
-            ball.dy = -ball.dy;
-        }
-
-        //отскок - от платформы
-        const paddleTop = paddle.y - paddle.h / 2;
-        const paddleBottom = paddle.y + paddle.h / 2;
-        const paddleLeft = paddle.x;
-        const paddleRight = paddle.x + paddle.w;
-
-        if (ball.dy > 0 &&
-            ball.y + ball.radius >= paddleTop &&
-            ball.y + ball.radius <= paddleBottom + 6 &&
-            ball.x >= paddleLeft - ball.radius &&
-            ball.x <= paddleRight + ball.radius) {
-
-            const hitPos = (ball.x - paddle.x) / paddle.w;
-            const angle = (hitPos - 0.5) * 1.2;
-            const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
-
-            ball.dx = Math.sin(angle) * speed;
-            ball.dy = -Math.cos(angle) * speed;
-
-            if (Math.abs(ball.dy) < speed * 0.25) {
-                ball.dy = -speed * 0.45;
+        if (!this.gameActive) return;
+    
+        for (let b = 0; b < this.balls.length; b++) {
+            const ball = this.balls[b];
+    
+            //движения мяча
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+    
+            //отскок - от стен
+            if (ball.x - ball.radius < 0) {
+                ball.x = ball.radius;
+                ball.dx = -ball.dx;
+            } else if (ball.x + ball.radius > canvas.width) {
+                ball.x = canvas.width - ball.radius;
+                ball.dx = -ball.dx;
             }
-            if (Math.abs(ball.dx) < 0.8) {
-                ball.dx = ball.dx > 0 ? 1.2 : -1.2;
+        
+            if (ball.y - ball.radius < 0) {
+                ball.y = ball.radius;
+                ball.dy = -ball.dy;
             }
-
-            ball.y = paddleTop - ball.radius - 0.5;
-        }
-
-        //удар по блокам
-        for (let i = 0; i < this.bricks.length; i++) {
-            const brick = this.bricks[i];
-            if (!brick.alive) continue;
-
-            const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.w));
-            const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.h));
-            const distX = ball.x - closestX;
-            const distY = ball.y - closestY;
-            const dist = Math.sqrt(distX * distX + distY * distY);
-
-            if (dist < ball.radius) {
-                brick.alive = false; 
-                this.score++; 
-                this.updateScoreDisplay();
-
-                if (brick.hasBonus) {
-                    this.spawnBonus(brick.x + brick.w / 2, brick.y);
-                }
-        
-                //направление
-                const directionX = ball.radius - Math.abs(distX);
-                const directionY = ball.radius - Math.abs(distY);
-        
-                if (directionX < directionY) {
-                    ball.dx = -ball.dx;
-                } else {
-                    ball.dy = -ball.dy;  
-                }
-        
-                if (distX !== 0 || distY !== 0) {
-                    const normX = distX / dist;
-                    const normY = distY / dist;
-                    ball.x = closestX + normX * (ball.radius + 0.5);
-                    ball.y = closestY + normY * (ball.radius + 0.5);
-                }
-        
-                //победа?
-                const allDead = this.bricks.every(b => !b.alive);
-                if (allDead) {
-                    this.gameActive = false;
-                    this.gameWin = true;
-                    this.saveHighScore();
-                }
-                break;
-            }
-
-        }
-
-        //бонусы
-        for (let i = this.bonuses.length - 1; i >= 0; i--) {
-            const bonus = this.bonuses[i];
-            bonus.y += bonus.speed;
-
+    
+            //отскок - от платформы
             const paddleTop = paddle.y - paddle.h / 2;
             const paddleBottom = paddle.y + paddle.h / 2;
             const paddleLeft = paddle.x;
             const paddleRight = paddle.x + paddle.w;
-
+    
+            if (ball.dy > 0 &&
+                ball.y + ball.radius >= paddleTop &&
+                ball.y + ball.radius <= paddleBottom + 6 &&
+                ball.x >= paddleLeft - ball.radius &&
+                ball.x <= paddleRight + ball.radius) {
+    
+                const hitPos = (ball.x - paddle.x) / paddle.w;
+                const angle = (hitPos - 0.5) * 1.2;
+                const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+    
+                ball.dx = Math.sin(angle) * speed;
+                ball.dy = -Math.cos(angle) * speed;
+    
+                if (Math.abs(ball.dy) < speed * 0.25) {
+                    ball.dy = -speed * 0.45;
+                }
+                if (Math.abs(ball.dx) < 0.8) {
+                    ball.dx = ball.dx > 0 ? 1.2 : -1.2;
+                }
+    
+                ball.y = paddleTop - ball.radius - 0.5;
+            }
+    
+            //удар по блокам
+            for (let i = 0; i < this.bricks.length; i++) {
+                const brick = this.bricks[i];
+                if (!brick.alive) continue;
+    
+                const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.w));
+                const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.h));
+                const distX = ball.x - closestX;
+                const distY = ball.y - closestY;
+                const dist = Math.sqrt(distX * distX + distY * distY);
+    
+                if (dist < ball.radius) {
+                    brick.alive = false; 
+                    this.score++; 
+                    this.updateScoreDisplay();
+    
+                    if (brick.hasBonus) {
+                        this.spawnBonus(brick.x + brick.w / 2, brick.y);
+                    }
+            
+                    //направление
+                    const directionX = ball.radius - Math.abs(distX);
+                    const directionY = ball.radius - Math.abs(distY);
+            
+                    if (directionX < directionY) {
+                        ball.dx = -ball.dx;
+                    } else {
+                        ball.dy = -ball.dy;  
+                    }
+            
+                    if (distX !== 0 || distY !== 0) {
+                        const normX = distX / dist;
+                        const normY = distY / dist;
+                        ball.x = closestX + normX * (ball.radius + 0.5);
+                        ball.y = closestY + normY * (ball.radius + 0.5);
+                    }
+            
+                    //победа?
+                    const allDead = this.bricks.every(b => !b.alive);
+                    if (allDead) {
+                        this.gameActive = false;
+                        this.gameWin = true;
+                        this.saveHighScore();
+                    }
+                    break;
+                }
+    
+            }
+        }
+    
+        //бонусы
+        for (let i = this.bonuses.length - 1; i >= 0; i--) {
+            const bonus = this.bonuses[i];
+            bonus.y += bonus.speed;
+    
+            const paddleTop = paddle.y - paddle.h / 2;
+            const paddleBottom = paddle.y + paddle.h / 2;
+            const paddleLeft = paddle.x;
+            const paddleRight = paddle.x + paddle.w;
+    
             if (bonus.y + bonus.h >= paddleTop &&
                 bonus.y <= paddleBottom &&
                 bonus.x + bonus.w >= paddleLeft &&
                 bonus.x <= paddleRight) {
-
-                switch (bonus.type) {
-                    case '1':
-                        console.log('бон 1');
-                        break;
-                    case '2':
-                        console.log('бон 2');
-                        break;
-                    default:
-                        console.log('Error');
-                }
-
+    
+                this.applyBonus(bonus.type);
+    
                 this.bonuses.splice(i, 1);
                 continue;
             }
-
+    
             if (bonus.y > canvas.height) {
                 this.bonuses.splice(i, 1);
             }
         }
 
 
+
+    
+
         //луз
-        if (ball.y + ball.radius > canvas.height) {
+        for (let i = this.balls.length - 1; i >= 0; i--) {
+            const ball = this.balls[i];
+            if (ball.y + ball.radius > canvas.height) {
+                this.balls.splice(i, 1);
+            }
+        }
+    
+        if (this.balls.length === 0) {
             this.lives--;
             this.updateLivesDisplay();
-        
+    
             if (this.lives <= 0) {
                 this.gameActive = false;
                 this.gameOver = true;
                 this.saveHighScore();
                 return;
             }
-        
+    
             this.gameActive = false;
             this.setupPaddle();
-            this.setupBall();
+            this.setupBalls();
             return;
         }
-
     },
 
     //отрисовка
@@ -361,10 +378,20 @@ const Arkanoid = {
         ctx.fillStyle = '#4C0F1A';
         ctx.fillRect(this.paddle.x, this.paddle.y - this.paddle.h / 2, this.paddle.w, this.paddle.h);
 
-        ctx.fillStyle = '#C4AA89';
-        ctx.beginPath();
-        ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
-        ctx.fill();
+        for (const ball of this.balls) {
+            ctx.fillStyle = ball.isMagnetic && ball.dx === 0 && ball.dy === 0 ? '#44D4FF' : '#C4AA89';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+    
+            if (ball.isMagnetic && ball.dx === 0 && ball.dy === 0) {
+                ctx.strokeStyle = '#44D4FF';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius + 4, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
     
         //Финальноее сообщение
         if (this.gameOver) {
@@ -409,13 +436,16 @@ const Arkanoid = {
         if (this.gameActive) return;
  
         this.gameActive = true;
-        const angle = -Math.PI / 2 + (Math.random() * 0.6 - 0.3);
-        const speed = this.ball.speed;
-        this.ball.dx = Math.cos(angle) * speed;
-        this.ball.dy = Math.sin(angle) * speed;
-
-        if (Math.abs(this.ball.dx) < 1.2) {
-            this.ball.dx = this.ball.dx > 0 ? 1.8 : -1.8;
+        for (const ball of this.balls) {
+            if (ball.isMagnetic && ball.dx === 0 && ball.dy === 0) {
+                const angle = -Math.PI / 2 + (Math.random() * 0.6 - 0.3);
+                ball.dx = Math.cos(angle) * ball.speed;
+                ball.dy = Math.sin(angle) * ball.speed;
+            } else if (ball.dx === 0 && ball.dy === 0) {
+                const angle = -Math.PI / 2 + (Math.random() * 0.6 - 0.3);
+                ball.dx = Math.cos(angle) * ball.speed;
+                ball.dy = Math.sin(angle) * ball.speed;
+            }
         }
     },
 
@@ -428,7 +458,7 @@ const Arkanoid = {
         this.bonuses = [];
         this.createBricks();
         this.setupPaddle();
-        this.setupBall();
+        this.setupBalls();
         this.updateLivesDisplay();
         this.updateScoreDisplay();
     },
@@ -452,6 +482,47 @@ const Arkanoid = {
         }
     },
 
+    applyBonus(bonusType) {
+        switch (bonusType) {
+            case 'expand':
+                this.applyExpand();
+                break;
+            case 'divide':
+                this.applyDivide();
+                break;
+            default:
+                console.log('Error, bonus type - ', bonusType);
+        }
+    },
+
+    applyExpand() {
+        this.paddle.w = Math.min(this.paddle.w * 1.5, 200);
+        setTimeout(() => {
+            this.paddle.w = 120;  
+        }, 10000);
+    },
+
+    applyDivide() {
+        const currentBall = this.balls[0];
+        if (currentBall) {
+            this.balls = [];
+            const angles = [-0.5, 0, 0.5];
+            const speed = currentBall.speed || 3;
+            for (const angleOffset of angles) {
+                const angle = -Math.PI / 2 + angleOffset * 0.8;
+                this.balls.push({
+                    x: this.paddle.x + this.paddle.w / 2,
+                    y: this.paddle.y - this.paddle.h / 2 - 9,
+                    radius: 9,
+                    dx: Math.cos(angle) * speed,
+                    dy: Math.sin(angle) * speed,
+                    speed: speed,
+                    isMagnetic: false
+                });
+            }
+            this.gameActive = true;
+        }
+    },
 
     gameLoop() {
         this.update();
